@@ -1,0 +1,26 @@
+{
+  "name": "guysartorelli/ddev-wrapper",
+  "description": "Wrapper around ddev to allow for truly-global commands",
+  "license": "BSD-3-Clause",
+  "autoload": {
+    "psr-4": {
+      "GuySartorelli\\DdevWrapper\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "GuySartorelli\\DdevWrapper\\Tests\\": "tests/"
+    }
+  },
+  "require": {
+    "php": "^8.1",
+    "symfony/console": "^6.0",
+    "symfony/process": "^6.0"
+  },
+  "require-dev": {
+    "squizlabs/php_codesniffer": "^3.7",
+    "phpunit/phpunit": "^10.0"
+  },
+  "prefer-stable": true,
+  "minimum-stability": "dev"
+}
