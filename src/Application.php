@@ -1,10 +1,12 @@
 <?php declare(strict_types=1);
 
-namespace GuySartorelli\DdevWrapper\Application;
+namespace GuySartorelli\DdevWrapper;
 
-use GuySartorelli\DdevWrapper\Command\Help;
+use GuySartorelli\DdevWrapper\Command\HelpCommand;
+use GuySartorelli\DdevWrapper\Console\DdevCommandLoader;
+use GuySartorelli\DdevWrapper\Console\VersionlessInput;
 use Symfony\Component\Console\Application as BaseApplication;
-use Symfony\Component\Console\Command\HelpCommand;
+use Symfony\Component\Console\Command\HelpCommand as BaseHelpCommand;
 use Symfony\Component\Console\Command\ListCommand;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
@@ -42,8 +44,8 @@ class Application extends BaseApplication
         foreach ($defaults as $i => $command) {
             if ($command instanceof ListCommand) {
                 $command->setName('list-commands');
-            } elseif ($command instanceof HelpCommand) {
-                $defaults[$i] = new Help($command->getName());
+            } elseif ($command instanceof BaseHelpCommand) {
+                $defaults[$i] = new HelpCommand($command->getName());
             }
         }
         return $defaults;

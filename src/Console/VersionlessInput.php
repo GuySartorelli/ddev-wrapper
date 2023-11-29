@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace GuySartorelli\DdevWrapper\Application;
+namespace GuySartorelli\DdevWrapper\Console;
 
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
