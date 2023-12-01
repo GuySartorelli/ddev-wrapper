@@ -2,11 +2,11 @@
 
 namespace GuySartorelli\DdevWrapper\Command;
 
+use GuySartorelli\DdevWrapper\DDevHelper;
 use ReflectionProperty;
 use Symfony\Component\Console\Command\HelpCommand as BaseHelpCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Process\Process;
 
 class HelpCommand extends BaseHelpCommand
 {
@@ -27,9 +27,7 @@ class HelpCommand extends BaseHelpCommand
 
         // Pass through commands should just pass through the help request.
         if ($command instanceof PassThroughCommand) {
-            $process = new Process(['ddev', $command->getName(), '-h', ...$this->getArgsAndFlags($input, $command)]);
-            $process->run();
-            $ddevOutput = $process->getOutput();
+            $ddevOutput = DDevHelper::run($command->getName(), ['-h', ...$this->getArgsAndFlags($input, $command)]);
 
             // Replace "ddev <commandName>" with the wrapper execution, and add examples to help info.
             $appName = $command->getApplication()?->getName();

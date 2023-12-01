@@ -2,6 +2,7 @@
 
 namespace GuySartorelli\DdevWrapper\Command;
 
+use GuySartorelli\DdevWrapper\DDevHelper;
 use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -125,9 +126,7 @@ class PassThroughCommand extends Command
         $appName = $this->getApplication()?->getName();
         $regexSafeCmdName = preg_quote($this->getName(), '/');
 
-        $process = new Process(['ddev', $this->getName(), '-h']);
-        $process->run();
-        $output = $process->getOutput();
+        $output = DDevHelper::run($this->getName(), ['-h']);
 
         // Add help information
         preg_match('/^.+?\n/', $output, $matches);

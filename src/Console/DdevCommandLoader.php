@@ -3,11 +3,11 @@
 namespace GuySartorelli\DdevWrapper\Console;
 
 use GuySartorelli\DdevWrapper\Command\PassThroughCommand;
+use GuySartorelli\DdevWrapper\DDevHelper;
 use LogicException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\CommandLoader\CommandLoaderInterface;
 use Symfony\Component\Console\Exception\CommandNotFoundException;
-use Symfony\Component\Process\Process;
 
 /**
  * Finds available DDEV commands
@@ -26,9 +26,7 @@ class DdevCommandLoader implements CommandLoaderInterface
             return;
         }
 
-        $process = new Process(['ddev', '-h']);
-        $process->run();
-        $output = $process->getOutput();
+        $output = DDevHelper::run('help');
 
         // Find commandList
         $hasCommandList = preg_match('/(?<=Available Commands:\n).+?(?=\n{2})/s', $output, $matches);

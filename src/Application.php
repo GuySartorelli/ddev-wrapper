@@ -11,7 +11,6 @@ use Symfony\Component\Console\Command\ListCommand;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Process\Process;
 
 class Application extends BaseApplication
 {
@@ -27,12 +26,7 @@ class Application extends BaseApplication
     public function getVersion(): string
     {
         if (!$this->version) {
-            $process = new Process(['ddev', '-v']);
-            $process->run();
-            if ($process->getErrorOutput()) {
-                return 'UNKNOWN';
-            }
-            $this->version = trim($process->getOutput());
+            $this->version = trim(DDevHelper::run('-v'));
         }
         return '(' . $this->version . ')';
     }
