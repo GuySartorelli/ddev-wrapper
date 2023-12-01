@@ -10,7 +10,6 @@ use Symfony\Component\Console\Command\HelpCommand as BaseHelpCommand;
 use Symfony\Component\Console\Command\ListCommand;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 
@@ -87,9 +86,6 @@ class Application extends BaseApplication
                 $realDefinition[] = $option;
             }
         }
-        // Add the one global flag we know DDEV has - easier to just hardcode this rather than fetch it dynamically.
-        // If they add more later, it might make sense to fetch these from `ddev -h`
-        $realDefinition[] = new InputOption('json-output', 'j', description: 'If true, user-oriented output will be in JSON format.');
         $definition->setDefinition($realDefinition);
         return $definition;
     }
