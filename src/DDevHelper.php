@@ -10,12 +10,13 @@ class DDevHelper
     /**
      * Run a DDEV command interactively (assumes TTY is supported)
      */
-    public static function runInteractive(string $command, array $args = []): void
+    public static function runInteractive(string $command, array $args = []): bool
     {
         $process = new Process(['ddev', $command, ...$args]);
         $process->setTimeout(null);
         $process->setTty(true);
         $process->run();
+        return $process->isSuccessful();
     }
 
     /**
