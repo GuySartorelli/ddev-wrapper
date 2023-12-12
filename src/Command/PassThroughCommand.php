@@ -127,7 +127,7 @@ class PassThroughCommand extends Command
         $appName = $this->getApplication()?->getName();
         $regexSafeCmdName = preg_quote($this->getName(), '/');
 
-        $output = DDevHelper::run($this->getName(), ['-h']);
+        $output = DDevHelper::run('help', [$this->getName()]);
 
         // Add help information
         preg_match('/^.+?\n/', $output, $matches);
