@@ -5,6 +5,7 @@ namespace GuySartorelli\DdevWrapper\Command;
 use GuySartorelli\DdevWrapper\DDevHelper;
 use RuntimeException;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Completion\CompletionInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
@@ -185,7 +186,19 @@ class PassThroughCommand extends Command
         }
 
         // We can't easily detect which commands should allow arguments, so lets just allow an array of arguments.
-        $this->addArgument('arguments', InputArgument::IS_ARRAY | InputArgument::OPTIONAL, 'Arguments to be passed through to the DDEV command, if any. See help below.');
+        $this->addArgument(
+            'arguments',
+            InputArgument::IS_ARRAY | InputArgument::OPTIONAL,
+            'Arguments to be passed through to the DDEV command, if any. See help below.',
+            null,
+            // Pass completion request through to ddev in case there are sub-commands or valid arguments.
+            // Note that because this is an array type (to account for possible multi-nested commands), it will
+            // give the same value multiple times (e.g. ddev auth \t ssh \t ssh)
+            function (CompletionInput $input) {
+                $ddevCompletion = DDevHelper::run('__complete', [$this->getName(), $input->getCompletionValue()]);
+                return array_filter(explode("\n", $ddevCompletion), fn ($option) => !str_starts_with($option, ':'));
+            }
+        );
 
         $this->initialised = true;
     }
