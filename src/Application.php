@@ -6,10 +6,12 @@ use GuySartorelli\DdevWrapper\Command\HelpCommand;
 use GuySartorelli\DdevWrapper\Console\DdevCommandLoader;
 use GuySartorelli\DdevWrapper\Console\VersionlessInput;
 use Symfony\Component\Console\Application as BaseApplication;
+use Symfony\Component\Console\Command\CompleteCommand;
 use Symfony\Component\Console\Command\HelpCommand as BaseHelpCommand;
 use Symfony\Component\Console\Command\ListCommand;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class Application extends BaseApplication
@@ -39,6 +41,8 @@ class Application extends BaseApplication
                 $command->setName('list-commands');
             } elseif ($command instanceof BaseHelpCommand) {
                 $defaults[$i] = new HelpCommand($command->getName());
+            } elseif ($command instanceof CompleteCommand) {
+                $command->addOption('no-interaction', 'n');
             }
         }
         return $defaults;
