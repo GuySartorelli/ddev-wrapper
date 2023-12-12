@@ -112,7 +112,7 @@ class PassThroughCommand extends Command
     {
         // Add the one global flag we know DDEV has - easier to just hardcode this rather than fetch it dynamically.
         // If they add more later, it might make sense to fetch these from `ddev -h`
-        $this->addOption('json-output', 'j', description: 'If true, user-oriented output will be in JSON format.');
+        $this->addOption('json-output', 'j', InputOption::VALUE_OPTIONAL, 'If true, user-oriented output will be in JSON format.', self::NULL_OPTION_VALUE);
     }
 
     /**
