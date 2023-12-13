@@ -3,15 +3,18 @@
 namespace GuySartorelli\DdevWrapper;
 
 use GuySartorelli\DdevWrapper\Command\HelpCommand;
+use GuySartorelli\DdevWrapper\Command\PassThroughCommand;
 use GuySartorelli\DdevWrapper\Console\DdevCommandLoader;
 use GuySartorelli\DdevWrapper\Console\VersionlessInput;
 use Symfony\Component\Console\Application as BaseApplication;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Command\CompleteCommand;
 use Symfony\Component\Console\Command\HelpCommand as BaseHelpCommand;
 use Symfony\Component\Console\Command\ListCommand;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Process\Process;
 
 class Application extends BaseApplication
 {
@@ -22,6 +25,39 @@ class Application extends BaseApplication
         parent::__construct($name);
         $this->setDefaultCommand('list-commands');
         $this->setCommandLoader(new DdevCommandLoader());
+    }
+
+    /**
+     * Add a command which is a shortcut to a DDEV command (useful for exec commands)
+     *
+     * Returns the Command instance, so you can add input options etc for default args.
+     */
+    public function addShortcutCommand(string $name, string $description, string $ddevCommand, array $args): Command
+    {
+        $command = $this->register($name);
+        $command->setDescription($description);
+
+        $command->setCode(function (InputInterface $input, OutputInterface $output) use ($ddevCommand, $args): int {
+            // Get any passthrough values from the input arguments/options
+            $passThrough = PassThroughCommand::getPassThroughArgsForInput($input, $this->getForbiddenOptions());
+
+            // Run the command
+            $process = new Process(['ddev', $ddevCommand, ...$args, ...$passThrough]);
+            if (Process::isTtySupported()) {
+                $process->setTimeout(null);
+                $process->setTty(true);
+            }
+            $process->run();
+
+            // Send output if we weren't able to run interactively
+            if (!$process->isTty()) {
+                $output->write($process->isSuccessful() ? $process->getOutput() : $process->getErrorOutput());
+            }
+
+            return $process->isSuccessful() ? Command::SUCCESS : Command::FAILURE;
+        });
+
+        return $command;
     }
 
     public function getVersion(): string

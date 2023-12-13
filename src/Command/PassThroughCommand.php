@@ -2,6 +2,7 @@
 
 namespace GuySartorelli\DdevWrapper\Command;
 
+use GuySartorelli\DdevWrapper\Application;
 use GuySartorelli\DdevWrapper\DDevHelper;
 use RuntimeException;
 use Symfony\Component\Console\Command\Command;
@@ -55,6 +56,32 @@ class PassThroughCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $forbiddenOptions = ($this->getApplication() instanceof Application)
+            ? $this->getApplication()->getForbiddenOptions()
+            : [];
+        $passThrough = static::getPassThroughArgsForInput($input, $forbiddenOptions);
+
+        // Run the command
+        $process = new Process(['ddev', $this->getName(), ...$passThrough]);
+        if (Process::isTtySupported()) {
+            $process->setTimeout(null);
+            $process->setTty(true);
+        }
+        $process->run();
+
+        // Send output if we weren't able to run interactively
+        if (!$process->isTty()) {
+            $output->write($process->isSuccessful() ? $process->getOutput() : $process->getErrorOutput());
+        }
+
+        return $process->isSuccessful() ? self::SUCCESS : self::FAILURE;
+    }
+
+    /**
+     * Get the values to be passed through to a DDEV command based on the input arguments/options
+     */
+    public static function getPassThroughArgsForInput(InputInterface $input, array $forbiddenOptions = null): array
+    {
         $passThrough = [];
 
         // Grab all arguments to be passed through
@@ -73,7 +100,7 @@ class PassThroughCommand extends Command
 
         // Grab all options to be passed through
         $options = $input->getOptions();
-        $ignoreOptions = $this->getApplication()?->getForbiddenOptions() ?? ['long' => []];
+        $ignoreOptions = $forbiddenOptions ?? ['long' => []];
         foreach ($options as $name => $value) {
             if ($value === self::NULL_OPTION_VALUE || in_array($name, $ignoreOptions['long'])) {
                 continue;
@@ -86,20 +113,7 @@ class PassThroughCommand extends Command
             }
         }
 
-        // Run the command
-        $process = new Process(['ddev', $this->getName(), ...$passThrough]);
-        if (Process::isTtySupported()) {
-            $process->setTimeout(null);
-            $process->setTty(true);
-        }
-        $process->run();
-
-        // Send output if we weren't able to run interactively
-        if (!$process->isTty()) {
-            $output->write($process->isSuccessful() ? $process->getOutput() : $process->getErrorOutput());
-        }
-
-        return $process->isSuccessful() ? self::SUCCESS : self::FAILURE;
+        return $passThrough;
     }
 
     protected function configure()
