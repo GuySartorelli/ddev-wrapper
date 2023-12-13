@@ -135,65 +135,52 @@ class PassThroughCommand extends Command
         $appName = $this->getApplication()?->getName();
         $regexSafeCmdName = preg_quote($this->getName(), '/');
 
-        $output = DDevHelper::run('help', [$this->getName()]);
+        $helpOutput = DDevHelper::runJson('help', [$this->getName()]);
 
         // Add help information
-        preg_match('/^.+?\n/', $output, $matches);
-        $help = trim($matches[0] ?? '');
-        $examplesSection = $this->getSectionFromDdev('Examples', $output);
-        if ($examplesSection) {
+        $help = $helpOutput->LongDescription ?? '';
+        if ($helpOutput->Example) {
             // Replace "ddev <commandName>" with the wrapper execution, and add examples to help info.
             $newName = $appName ? "$appName {$this->getName()}" : $this->getName();
-            $help .= "\n\nExamples:\n" . trim(preg_replace('/ddev ' . $regexSafeCmdName . '/', $newName, $examplesSection));
+            $help .= "\n\nExamples:\n" . trim(preg_replace('/ddev ' . $regexSafeCmdName . '/', $newName, $helpOutput->Example));
         }
         $this->setHelp($help);
 
         // Add aliases
-        $aliasSection = $this->getSectionFromDdev('Aliases', $output);
-        if ($aliasSection) {
-            $aliases = explode(',', str_replace(' ', '', $aliasSection));
-            $aliases = array_diff($aliases, [$this->getName()]);
-            $this->setAliases($aliases);
+        if (is_array($helpOutput->Aliases)) {
+            $this->setAliases(array_diff($helpOutput->Aliases, [$this->getName()]));
         }
 
         // Add usages
-        $usageSection = $this->getSectionFromDdev('Usage', $output);
-        if ($usageSection) {
+        if ($helpOutput->Usage) {
             // Remove the "ddev <commandName"> since that'll be added automagically by symfony console.
-            $usages = explode("\n", preg_replace('/ddev ' . $regexSafeCmdName . '/', '', $usageSection));
+            $usages = explode("\n", preg_replace('/ddev ' . $regexSafeCmdName . '/', '', $helpOutput->Usage));
             foreach ($usages as $usage) {
                 $this->addUsage(trim($usage));
             }
         }
 
         // Add options (flags, not arguments)
-        $flagSection = $this->getSectionFromDdev('Flags', $output);
-        if ($flagSection) {
-            $flagRegex = '/^\h*(?>-(?<shortFlag>[a-zA-Z]),?)?\h*--(?<longFlag>[a-zA-Z-]+)\h+(?<description>[^\v]*)$/m';
-            $hasValidFlags = preg_match_all($flagRegex, $flagSection, $matches);
-            if ($hasValidFlags) {
-                $forbiddenFlags = $this->getApplication()?->getForbiddenOptions() ?? ['long' => [], 'short' => []];
-                for ($i = 0; $i < count($matches[0]); $i++) {
-                    $shortFlag = $matches['shortFlag'][$i] ?? null;
-                    $longFlag = $matches['longFlag'][$i];
-                    $description = trim($matches['description'][$i]);
-
-                    // We get info about the help flag for free with symfony console.
-                    if (strtolower($longFlag) === 'help' || $shortFlag === 'h') {
-                        continue;
-                    }
-
-                    // Throw a wobbly if we get a conflict - then I'll know I need to do something about it.
-                    if (in_array(strtolower($longFlag), $forbiddenFlags['long']) || in_array($shortFlag, $forbiddenFlags['short'])) {
-                        throw new RuntimeException("Conflict between symfony console default option and the '--$longFlag' option for command {$this->getName()}");
-                    }
-
-                    $this->addOption($longFlag, $shortFlag, InputOption::VALUE_OPTIONAL, $description, self::NULL_OPTION_VALUE);
+        if (is_array($helpOutput->Flags)) {
+            $forbiddenFlags = $this->getApplication()?->getForbiddenOptions() ?? ['long' => [], 'short' => []];
+            foreach ($helpOutput->Flags as $flag) {
+                // We get info about the help flag for free with symfony console.
+                if (strtolower($flag->Name) === 'help' || $flag->Shorthand === 'h') {
+                    continue;
                 }
+
+                // Throw a wobbly if we get a conflict - then I'll know I need to do something about it.
+                if (in_array(strtolower($flag->Name), $forbiddenFlags['long']) || in_array($flag->Shorthand, $forbiddenFlags['short'])) {
+                    throw new RuntimeException("Conflict between symfony console default option and the '--{$flag->Name}' option for command {$this->getName()}");
+                }
+
+                $this->addOption($flag->Name, $flag->Shorthand, InputOption::VALUE_OPTIONAL, $flag->Usage, self::NULL_OPTION_VALUE);
             }
         }
 
         // We can't easily detect which commands should allow arguments, so lets just allow an array of arguments.
+        // Note that while some commands have sub-commands which would be arguments, those aren't the only acceptable arguments,
+        // e.g. composer and exec can both have variable arguments.
         $this->addArgument(
             'arguments',
             InputArgument::IS_ARRAY | InputArgument::OPTIONAL,
@@ -209,12 +196,5 @@ class PassThroughCommand extends Command
         );
 
         $this->initialised = true;
-    }
-
-    private function getSectionFromDdev(string $section, string $output): ?string
-    {
-        $regexSafeSection = preg_quote($section, '/');
-        $hasSection = preg_match('/(?>(?>\v|^)' . $regexSafeSection . ':\v)(.+?(?=(?>\v{2}|$)))/s', $output, $matches);
-        return $hasSection ? $matches[1] : null;
     }
 }

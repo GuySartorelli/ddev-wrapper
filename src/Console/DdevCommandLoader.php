@@ -27,29 +27,22 @@ class DdevCommandLoader implements CommandLoaderInterface
             return;
         }
 
-        $output = DDevHelper::run('help');
-
-        // Find commandList
-        $hasCommandList = preg_match('/(?<=Available Commands:\n).+?(?=\n{2})/s', $output, $matches);
-        if (!$hasCommandList) {
-            throw new LogicException('No command list found - run "ddev -h" and confirm it outputs correctly.');
+        $helpOutput = DDevHelper::runJson('help');
+        if (!$helpOutput) {
+            throw new LogicException('No command list found - run "ddev -hj" and confirm it outputs correctly.');
         }
 
-        // Find all commands in list
-        $commandList = $matches[0];
-        $hasValidCommands = preg_match_all('/^\h*(?<name>[\w-]+)\h+(?<description>[^\v]+$)/m', $commandList, $matches);
-        if (!$hasValidCommands) {
-            throw new LogicException('No commands found - run "ddev -h" and confirm it outputs correctly.');
+        $commands = array_merge($helpOutput->Commands ?? [], $helpOutput->AdditionalHelpCommands ?? [], $helpOutput->AdditionalCommands ?? []);
+        if (empty($commands)) {
+            throw new LogicException('No commands found - run "ddev -hj" and confirm it outputs correctly.');
         }
 
         // Build a command object for each command in the list
-        for ($i = 0; $i < count($matches[0]); $i++) {
-            $name = $matches['name'][$i];
-            $description = trim($matches['description'][$i]);
+        foreach ($commands as $command) {
+            $name = $command->Name;
             // Use LazyCommand to avoid bootstrapping EVERY command EVERY time we want autocompletion or to list commands.
-            // Aliases no longer work - and they're not listed in the command list or used in autcompletion (which IMO is actually better anyway).
-            // Aliases will probably be usable after https://github.com/ddev/ddev/pull/5572 is merged and we can stop using regex to pull info.
-            $this->commands[$name] = new LazyCommand($name, [], $description, false, fn () => new PassThroughCommand($name));
+            // Aliases won't work - and they're not listed in the command list or used in autcompletion (which IMO is actually better anyway).
+            $this->commands[$name] = new LazyCommand($name, [], $command->Description, false, fn () => new PassThroughCommand($name));
         }
     }
 
