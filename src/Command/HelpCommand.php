@@ -5,6 +5,7 @@ namespace GuySartorelli\DdevWrapper\Command;
 use GuySartorelli\DdevWrapper\DDevHelper;
 use ReflectionProperty;
 use Symfony\Component\Console\Command\HelpCommand as BaseHelpCommand;
+use Symfony\Component\Console\Command\LazyCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -23,6 +24,10 @@ class HelpCommand extends BaseHelpCommand
         if (!$command) {
             $command = $this->getApplication()->find($input->getArgument('command_name'));
             $this->setCommand($command);
+        }
+
+        if ($command instanceof LazyCommand) {
+            $command = $command->getCommand();
         }
 
         // Pass through commands should just pass through the help request.

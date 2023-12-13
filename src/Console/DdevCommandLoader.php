@@ -6,6 +6,7 @@ use GuySartorelli\DdevWrapper\Command\PassThroughCommand;
 use GuySartorelli\DdevWrapper\DDevHelper;
 use LogicException;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Command\LazyCommand;
 use Symfony\Component\Console\CommandLoader\CommandLoaderInterface;
 use Symfony\Component\Console\Exception\CommandNotFoundException;
 
@@ -45,7 +46,10 @@ class DdevCommandLoader implements CommandLoaderInterface
         for ($i = 0; $i < count($matches[0]); $i++) {
             $name = $matches['name'][$i];
             $description = trim($matches['description'][$i]);
-            $this->commands[$name] = new PassThroughCommand($name, $description);
+            // Use LazyCommand to avoid bootstrapping EVERY command EVERY time we want autocompletion or to list commands.
+            // Aliases no longer work - and they're not listed in the command list or used in autcompletion (which IMO is actually better anyway).
+            // Aliases will probably be usable after https://github.com/ddev/ddev/pull/5572 is merged and we can stop using regex to pull info.
+            $this->commands[$name] = new LazyCommand($name, [], $description, false, fn () => new PassThroughCommand($name));
         }
     }
 

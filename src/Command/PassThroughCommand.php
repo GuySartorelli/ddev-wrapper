@@ -35,12 +35,6 @@ class PassThroughCommand extends Command
 
     private bool $initialised = false;
 
-    public function __construct(string $name, string $description)
-    {
-        $this->setDescription($description);
-        parent::__construct($name);
-    }
-
     public function getHelp(): string
     {
         $this->initFromDdev();
