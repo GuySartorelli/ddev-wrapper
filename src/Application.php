@@ -106,6 +106,7 @@ class Application extends BaseApplication
             $output->setDecorated(false);
         }
 
+        $command = null;
         try {
             $command = $this->get($this->getCommandName($input) ?? '');
         } catch (CommandNotFoundException) {
