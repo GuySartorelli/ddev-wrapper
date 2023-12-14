@@ -35,6 +35,7 @@ class DDevHelper
         }
 
         $process = new Process(['ddev', $command, ...$args]);
+        $process->setTimeout(null);
         $process->run($quietModeCallback);
         return $process->isSuccessful();
     }
