@@ -10,7 +10,9 @@ use Symfony\Component\Console\Application as BaseApplication;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Command\CompleteCommand;
 use Symfony\Component\Console\Command\HelpCommand as BaseHelpCommand;
+use Symfony\Component\Console\Command\LazyCommand;
 use Symfony\Component\Console\Command\ListCommand;
+use Symfony\Component\Console\Exception\CommandNotFoundException;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -104,9 +106,38 @@ class Application extends BaseApplication
             $output->setDecorated(false);
         }
 
-        // This is where we'd be dealing with verbosity and the like...
-        // but DDEV doesn't have the same verbosity nonsense that symfony console tries to force down our throats
-        // so we don't want to call the parent method or reintroduce any of that.
+        try {
+            $command = $this->get($this->getCommandName($input) ?? '');
+        } catch (CommandNotFoundException) {
+            // If we have no command, it's no a passthrough command, so we can just carry on.
+        }
+
+        // If we have a pass through command, bail out. Let DDEV handle its own verbosity.
+        if ($command instanceof LazyCommand) {
+            $command = $command->getCommand();
+        }
+        if ($command instanceof PassThroughCommand) {
+            return;
+        }
+
+        if ($input->hasParameterOption('-vvv', true) || $input->hasParameterOption('--verbose=3', true) || 3 === $input->getParameterOption('--verbose', false, true)) {
+            $output->setVerbosity(OutputInterface::VERBOSITY_DEBUG);
+            $shellVerbosity = 3;
+        } elseif ($input->hasParameterOption('-vv', true) || $input->hasParameterOption('--verbose=2', true) || 2 === $input->getParameterOption('--verbose', false, true)) {
+            $output->setVerbosity(OutputInterface::VERBOSITY_VERY_VERBOSE);
+            $shellVerbosity = 2;
+        } elseif ($input->hasParameterOption('-v', true) || $input->hasParameterOption('--verbose=1', true) || $input->hasParameterOption('--verbose', true) || $input->getParameterOption('--verbose', false, true)) {
+            $output->setVerbosity(OutputInterface::VERBOSITY_VERBOSE);
+            $shellVerbosity = 1;
+        } else {
+            $shellVerbosity = 0;
+        }
+
+        if (\function_exists('putenv')) {
+            @putenv('SHELL_VERBOSITY='.$shellVerbosity);
+        }
+        $_ENV['SHELL_VERBOSITY'] = $shellVerbosity;
+        $_SERVER['SHELL_VERBOSITY'] = $shellVerbosity;
     }
 
     protected function getDefaultInputDefinition(): InputDefinition
@@ -115,7 +146,7 @@ class Application extends BaseApplication
         $realDefinition = $definition->getArguments();
         foreach ($definition->getOptions() as $option) {
             // Don't include options that we're explicitly not using for this application.
-            if (!in_array($option->getName(), ['no-interaction', 'quiet', 'verbose', 'version'])) {
+            if (!in_array($option->getName(), ['no-interaction', 'quiet', 'version'])) {
                 $realDefinition[] = $option;
             }
         }

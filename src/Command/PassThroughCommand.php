@@ -123,6 +123,21 @@ class PassThroughCommand extends Command
         $this->addOption('json-output', 'j', InputOption::VALUE_OPTIONAL, 'If true, user-oriented output will be in JSON format.', self::NULL_OPTION_VALUE);
     }
 
+    public function mergeApplicationDefinition(bool $mergeArgs = true): void
+    {
+        // Remove verbose from the app options, so we don't add it to this command.
+        $appDefinition = $this->getApplication()->getDefinition();
+        $appOptions = [];
+        foreach ($appDefinition->getOptions() as $option) {
+            if ($option->getName() === 'verbose') {
+                continue;
+            }
+            $appOptions[] = $option;
+        }
+        $appDefinition->setOptions($appOptions);
+        parent::mergeApplicationDefinition($mergeArgs);
+    }
+
     /**
      * Get the definition for this command from DDev
      */
