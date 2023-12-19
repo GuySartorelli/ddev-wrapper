@@ -164,6 +164,9 @@ class Application extends BaseApplication
         ];
         foreach ($options as $option)
         {
+            if ($option->getName() === 'verbose') {
+                continue;
+            }
             $forbidden['long'][] = $option->getName();
             if ($option->getShortcut()) {
                 $forbidden['short'][] = $option->getShortcut();
