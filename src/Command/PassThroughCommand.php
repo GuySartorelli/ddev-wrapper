@@ -4,6 +4,7 @@ namespace GuySartorelli\DdevWrapper\Command;
 
 use GuySartorelli\DdevWrapper\Application;
 use GuySartorelli\DdevWrapper\DDevHelper;
+use ReflectionProperty;
 use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Completion\CompletionInput;
@@ -159,7 +160,17 @@ class PassThroughCommand extends Command
             // Note that because this is an array type (to account for possible multi-nested commands), it will
             // give the same value multiple times (e.g. ddev auth \t ssh \t ssh)
             function (CompletionInput $input) {
-                $ddevCompletion = DDevHelper::run('__complete', [$this->getName(), $input->getCompletionValue()]);
+                // Find out what tokens are ACTUALLY being passed into input, and remove the app and command name
+                $tokensProperty = new ReflectionProperty($input, 'tokens');
+                $tokensProperty->setAccessible(true);
+                $tokens = $tokensProperty->getValue($input);
+                array_splice($tokens, 0, 2);
+                // If the completion value is empty, slap that on the end of the tokens
+                if (empty($input->getCompletionValue())) {
+                    $tokens[] = '';
+                }
+                // Ask DDEV what the available args are
+                $ddevCompletion = DDevHelper::run('__complete', [$this->getName(), ...$tokens]);
                 return array_filter(explode("\n", $ddevCompletion), fn ($option) => !str_starts_with($option, ':'));
             }
         );
@@ -199,6 +210,7 @@ class PassThroughCommand extends Command
         }
 
         // Add options (flags, not arguments)
+        // Note that this doesn't take sub-commands into account - still haven't found a nice way to handle those.
         if (is_array($helpOutput->Flags)) {
             $forbiddenFlags = $this->getApplication()?->getForbiddenOptions() ?? ['long' => [], 'short' => []];
             foreach ($helpOutput->Flags as $flag) {
