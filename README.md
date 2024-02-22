@@ -1,3 +1,6 @@
+> [!CAUTION]
+> OBSOLETE! Use DDEV directly with [global commands](https://ddev.readthedocs.io/en/stable/users/extend/custom-commands/#canrunglobally-annotation) instead.
+
 This is a wrapper around DDEV so that I can add truly global commands.
 
 See https://ddev.readthedocs.io for the official DDEV documentation.
